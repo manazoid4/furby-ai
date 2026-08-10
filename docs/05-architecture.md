@@ -1,124 +1,189 @@
-# 05 - System architecture
+# 05 — Architecture
 
-## Shape
+## System split
 
-```
-  +------------------ FURBY (CrowPanel Advance 4.3") -------------------+
-  |                                                                      |
-  |  onboard I2S mic --> ring buffer --> PCM frames ---------------+      |
-  |                                                                |      |
-  |  onboard speaker <-- I2S TX <-- jitter buffer <-- audio frames |      |
-  |  800x480 screen  <-- face renderer <----------- face frames  <-+      |
-  |  touchscreen     --> event frames -----------------------------+      |
-  |                                                                |      |
-  +---------------------------- WebSocket -------------------------|-----+
-                                                                   |
-  +------------- XIAO ESP32S3 Sense (optional "eyes") ------------- |     |
-  |  camera --> JPEG frames --------------------------------------> |     |
-  +---------------------------------------------------------------|-----+
-                                                                   |
-  +--------------------- BRAIN (your PC) -------------------------- v ---+
-  |                                                                      |
-  |   ws server  -->  VAD (silero) --> STT (faster-whisper)               |
-  |                                          |                           |
-  |                                     transcript                       |
-  |                                          v                           |
-  |                     persona + memory + history (+ last camera frame)  |
-  |                                          v                           |
-  |                        LLM (Ollama local | Claude | OpenAI)           |
-  |                          |                        |                  |
-  |                     tool calls              text (streamed)          |
-  |                          v                        v                  |
-  |                  tool registry            sentence chunker           |
-  |                  (ALLOW-LISTED)                   v                  |
-  |                          |                 TTS (Piper | 11Labs)      |
-  |                          +-----------------------+                   |
-  |                                          v                           |
-  |                     face + audio frames back to the panel            |
-  +----------------------------------------------------------------------+
+The project is intentionally split into **peripherals** and **brains**.
+
+```text
+                        FURBY
+
+   ┌──────────────────────┐       ┌──────────────────────┐
+   │ CrowPanel ESP32-S3   │       │ CamS3 ESP32-S3      │
+   │ 2.13" e-paper        │       │ 5MP cam + PDM mic   │
+   │ buttons / future IO  │       │ microSD             │
+   └──────────┬───────────┘       └──────────┬───────────┘
+              │ Wi-Fi                        │ Wi-Fi
+              └──────────────┬────────────────┘
+                             ▼
+                    network / phone hotspot
+                             │
+                             ▼
+                       FURBY BRIDGE
+                             │
+          ┌──────────────────┼──────────────────┐
+          ▼                  ▼                  ▼
+      local AI          cloud AI            PC tools
+      Ollama            hosted LLM          allow-list
+      STT/TTS            vision             automation
 ```
 
-Two devices, one brain. The camera is a second WebSocket client, not a hardware
-change to the panel — which is why it stays optional and why adding it needs no
-tools.
+## CrowPanel responsibility
 
-## Why the brain is on the PC
+The CrowPanel is the **body controller**, not the AI engine.
 
-- Model swapping without a reflash.
-- Debugging a Python pipeline beats debugging a microcontroller.
-- Tool execution belongs where the tools are — your filesystem, your apps.
-- The panel's ESP32-S3 is busy driving an 800×480 display; it has no spare
-  cycles for inference and never will.
+It should be responsible for:
 
-The cost: the Furby is a brick without the network. Accepted. The firmware
-keeps a "can't reach brain" face and a few canned lines.
+- joining Wi-Fi
+- maintaining a connection to the bridge
+- rendering e-paper status
+- reading its own menu/rotary/back controls
+- later reading Furby tongue/tail/touch inputs
+- later issuing movement commands
+- reporting health/battery/network state
 
-## Firmware task layout (FreeRTOS)
+It should not run:
 
-| Task | Core | Priority | Job |
-|---|---|---|---|
-| `audio_in` | 1 | high | I2S RX from the onboard mic, ring buffer |
-| `audio_out` | 1 | high | I2S TX to the onboard speaker from the jitter buffer |
-| `net` | 0 | medium | wifi, WebSocket, framing, reconnect with backoff |
-| `ui` | 0 | low | face rendering, touch events, backlight |
+- a serious LLM
+- heavyweight speech-to-text
+- arbitrary shell commands
+- camera encoding for the second board
 
-Audio on core 1, away from the wifi stack on core 0. Underruns are audible;
-dropped protocol frames are not.
+## CamS3 responsibility
 
-Note there is no `motion` task. There is no motor. See `00-overview.md` for why.
+The CamS3 is deliberately independent.
 
-## Brain module map
+It should be responsible for:
 
-| File | Status | Job |
-|---|---|---|
-| `protocol.py` | **implemented + tested** | frame encode/decode, shared with the firmware |
-| `server.py` | planned | WebSocket server, one `Session` per device |
-| `pipeline.py` | planned | orchestrates VAD → STT → LLM → tools → TTS, streaming |
-| `stt.py` | planned | faster-whisper wrapper, pluggable |
-| `llm.py` | planned | Ollama / Anthropic / OpenAI behind one interface |
-| `tts.py` | planned | Piper / ElevenLabs behind one interface, chunked |
-| `tools.py` | planned | the allow-list. Read `07-safety-and-security.md` first. |
-| `persona.py` | planned | system prompt, mood state machine, expression vocabulary |
-| `vision.py` | planned | camera frames → vision model, on demand only |
-| `simulator.py` | planned | fake Furby using your laptop mic and speakers |
+- camera capture
+- JPEG/image transport
+- PDM microphone recording/capture
+- optional microSD logging
+- health/status endpoint
 
-Built strictly test-first, one behaviour at a time. `protocol.py` is done;
-everything else is a stub until its tests exist.
+The PC/bridge can address it directly. This means we do not need to route video through the CrowPanel.
 
-## Conversation state machine
+## Why two ESP32-S3s is simpler, not more complex
 
+It looks like more hardware, but each module is a complete product with a specialised peripheral set.
+
+Benefits:
+
+- camera workload cannot block e-paper/body control
+- independent firmware updates
+- fewer wires between modules
+- easier fault isolation
+- camera can be upgraded without replacing the stomach display
+- CrowPanel can later survive/reboot independently of camera services
+
+The cost is two network clients and two firmware/config surfaces. For this project, that is a good trade.
+
+## Network modes
+
+### Home
+
+```text
+CrowPanel ─┐
+           ├─ home Wi-Fi ─ bridge on PC ─ local/cloud agents
+CamS3 ─────┘
 ```
-IDLE --speech detected--> LISTENING --silence--> THINKING --first audio--> SPEAKING
-  ^                          |                       |                        |
-  |                          +-- timeout ------------+                        |
-  +-----------------------------------------------------------------------------+
-                        (or: touch event / barge-in)
+
+### Portable
+
+```text
+CrowPanel ─┐
+           ├─ phone hotspot ─ internet ─ cloud service
+CamS3 ─────┘
 ```
 
-`SPEAKING` gates mic capture (half-duplex). This matters more here than in most
-builds: the panel's microphone and speaker are centimetres apart, so without
-the gate the Furby hears itself, replies to itself, and does that forever.
+### Remote-home — later
 
-`THINKING` shows a thinking face so latency reads as personality rather than as
-a hang. Genuinely important trick.
+```text
+Furby → phone hotspot → authenticated relay/VPN path → home bridge → local agents
+```
 
-## The face
+Do not make remote-home networking a prerequisite for the first outdoor demo.
 
-The old build had one motor and a fixed gesture vocabulary. The new build has
-800×480 pixels, so "expression" is a rendering problem instead of a mechanical
-one — strictly better, and free.
+## Device discovery
 
-Expression vocabulary (the LLM picks one of these and nothing else):
+v0.1 can be very simple:
 
-`neutral`, `happy`, `curious`, `thinking`, `surprised`, `sleepy`, `confused`,
-`error`
+- static/configured bridge host
+- device IDs: `furby-body-01`, `furby-cam-01`
+- retry with backoff
+- serial logs for IP addresses
 
-Defined in `brain/furbybrain/persona.py`, rendered in
-`firmware/src/display/face.cpp`. Keep the list small and closed — it is what
-makes the model reliable, and it means a typo fails loudly instead of producing
-a blank screen.
+Later add mDNS/service discovery if it genuinely removes friction.
 
-Rendering approach: two eyes and a mouth drawn with primitives, animated by
-interpolating between expression keyframes. Do not attempt a photo-real face —
-a crude cartoon face that blinks reads as alive; an almost-real one reads as
-broken.
+## Message model
+
+The bridge should think in events, not pixels.
+
+Examples from bridge → CrowPanel:
+
+```json
+{"type":"state","value":"online"}
+{"type":"state","value":"listening"}
+{"type":"state","value":"thinking"}
+{"type":"state","value":"done"}
+{"type":"caption","line1":"RAM 31/40 GB","line2":"Chrome is highest"}
+{"type":"confirm","id":"abc123","title":"Delete 34 files?"}
+```
+
+Examples from CrowPanel → bridge:
+
+```json
+{"type":"button","name":"confirm"}
+{"type":"button","name":"back"}
+{"type":"status","rssi":-61,"uptime_s":820}
+```
+
+CamS3 can remain a separate HTTP/stream/image endpoint rather than being forced into the same protocol immediately.
+
+## Agent routing
+
+The bridge owns routing decisions:
+
+```text
+request
+  ↓
+intent / policy
+  ├── local model
+  ├── cloud model
+  ├── vision model
+  ├── local agent
+  └── safe PC tool
+```
+
+This lets the same Furby work at home and outdoors without reflashing firmware for every model/provider change.
+
+## Safety boundary
+
+The ESP32 should never be handed a generic remote-shell primitive.
+
+For computer actions:
+
+```text
+Furby request
+    ↓
+bridge
+    ↓
+allow-listed action
+    ↓
+policy / confirmation
+    ↓
+PC action
+```
+
+A future tongue press can approve sensitive actions, but the bridge must still validate the requested action and arguments.
+
+## Offline behaviour
+
+When the network disappears, Furby should degrade gracefully:
+
+- leave a clear `OFFLINE` state on e-paper
+- retain local button/menu operation
+- optionally allow camera capture to SD
+- queue only explicitly safe non-destructive requests
+- reconnect automatically
+
+Do not attempt to turn the ESP32 into an offline LLM just to avoid showing `OFFLINE`.
