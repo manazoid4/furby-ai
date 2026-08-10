@@ -1,124 +1,120 @@
-# 03 - Cutting the hole and mounting the panel
+# 03 — Mounting and wiring
 
-This used to be a wiring guide. There is no wiring. It is now a cutting guide.
+## v0.1 rule
 
-**Total connections in this build: one USB-C cable.**
+**Do not wire the two ESP32-S3 boards together unless there is a reason.**
 
----
+For the first build:
 
-## Before you cut
-
-1. Fur off, batteries out (`01-teardown.md`).
-2. Panel in hand. **Do not cut from the datasheet dimensions** — hold the real
-   board against the real belly.
-3. Belly measurements written into `08-build-log.md`.
-4. Decide where the USB-C cable exits. Usually straight down through the battery
-   hatch, which is already a hole.
-
-## Making the template
-
-1. Put the panel face-down on paper, draw round the **visible screen area**,
-   not the whole PCB. The PCB is bigger than the glass.
-2. Add 1 mm all round for clearance. The hole should reveal the glass and hide
-   the PCB edge.
-3. Cut the paper template out. Hold it on the belly. Look at it from a few feet
-   away — this is the Furby's new face, and a rectangle that is 3 mm off-centre
-   reads as *wrong* even when you can't say why.
-4. Mark the centre line against the Furby's own symmetry (the seam, the feet),
-   not against the belly's widest point.
-
-## Cutting
-
-Masking tape over the whole belly area first. Mark the rectangle on the tape.
-
-1. **Drill the four corners.** A 3-4 mm bit, or a hole punch, or the tip of a
-   hot screwdriver. This is the step that stops the plastic cracking, and
-   cracking is the failure mode that ends the build.
-2. **Cut between the corner holes** with a craft knife. Many light passes, not
-   one deep one. ABS scores and snaps; it does not slice.
-3. **File the edges** flat and slightly chamfered.
-4. Test-fit the panel. Take material off the *hole*, never off the panel.
-
-Cut **small**. You can always open a hole up. You cannot close one.
-
-## Mounting
-
-The panel sits behind the hole, glass forward, held by tape on the PCB's back
-edges against the inside of the shell.
-
-```
-        outside                         inside
-   ______________________________________________
-        fur                    |
-   ---------------------       |
-        plastic shell          |
-   ====[  hole  ]==============|
-        ^                      |
-        | 1-2 mm gap           |
-       [ GLASS ]               |
-       [ PANEL PCB ]  <-- VHB tape on these edges, to the shell
-                              |
-                        USB-C out the bottom
+```text
+CrowPanel ── Wi-Fi ──┐
+                     ├── PC / phone / cloud bridge
+CamS3 ───── Wi-Fi ───┘
 ```
 
-Notes:
+That is simpler to debug than making the CrowPanel proxy camera/audio traffic.
 
-- **The belly is curved and the panel is flat.** Over a 105 mm span you will get
-  a gap at the left and right edges. Options, in order of laziness: (a) let the
-  fur overlap and hide it, (b) a craft-foam wedge behind the panel, (c) a
-  printed bezel.
-- **Do not tape over the mic hole.** Find it on the board before you commit —
-  covering the onboard microphone with VHB is a very annoying mistake to
-  diagnose later.
-- **Leave the reset button reachable**, or at least remember where it is.
-- Support the panel's weight on the shell, not on the tape alone, if you can —
-  a lip of foam underneath takes the load.
+## Stomach mount
 
-## The fur
+The Furby's stomach already has a neat rectangular opening roughly four inches across.
 
-Cut the fur opening **smaller than the plastic hole**, so the fur overlaps the
-screen edge by 2-3 mm. A fur fringe around the glass looks deliberate. A gap
-between fur and glass looks like damage.
+Use a simple sandwich:
 
-Seal the cut fur edge with a thin line of fabric glue or clear nail varnish, or
-it will fray on camera.
+```text
+outside
 
-## Power routing
+fur / shell edge
+      ↓
+┌─────────────────────┐
+│ thin backing plate  │
+│   ┌─────────────┐   │
+│   │  CROWPANEL  │   │
+│   │    E-INK    │   │
+│   └─────────────┘   │
+└─────────────────────┘
+      ↑ VHB / removable tape
 
-USB-C cable from the panel, out through the battery hatch, to the power bank.
-The power bank can live inside the body cavity (where the AAs were, plus the
-space the shell gives you) or outside as a deliberate "life support" gag.
+inside
+```
 
-Right-angle USB-C plug is worth the extra couple of pounds — a straight plug
-needs 20 mm of clearance behind the board that you probably don't have.
+### Recommended process
 
-## Panel pin reference
+1. Keep the CrowPanel complete in its acrylic case for the first fit test.
+2. Cut a thin ABS/acrylic/foam backing plate slightly larger than the existing opening.
+3. Put the plate behind the opening.
+4. Centre the visible e-paper area before attaching anything permanently.
+5. Use removable tape first.
+6. Only switch to VHB once USB access, buttons and viewing angle are confirmed.
+7. Leave enough slack to remove the panel for reflashing.
 
-You do not need this for the build. It matters only if you later add something
-to a Crowtail port.
+No bezel/CAD is required for v0.1.
 
-| Interface | Note |
-|---|---|
-| USB-C | Power + serial flashing |
-| BAT (PH2.0-2P) | 1S LiPo, 3.7-4.2 V |
-| I2C (HY2.0-4P) | Crowtail — sensors go here, no soldering |
-| UART (HY2.0-4P / XH2.54-4P) | Crowtail |
-| microSD slot | Local assets, sounds, images |
-| Onboard I2S mic | Already wired on the board |
-| Onboard speaker + amp | Already wired on the board |
+## CrowPanel pins we know from Elecrow
 
-**The exact GPIO numbers differ between CrowPanel models.** Take them from the
-Elecrow wiki page for *your* board and put them in
-`firmware/include/config.h` — the values in there now are placeholders and are
-marked as such.
+For the exact 2.13-inch board, Elecrow's hardware repo documents the e-paper connection as:
 
-## Assembly order
+```text
+EPD SCK   GPIO12
+EPD MOSI  GPIO11
+EPD RES   GPIO10
+EPD DC    GPIO13
+EPD CS    GPIO14
+EPD BUSY  GPIO9
+```
 
-1. Flash the firmware **before mounting**, while the board is on your desk and
-   the USB port is easy to reach.
-2. Confirm wifi connects and the brain responds. Talk to it on the desk.
-3. Only then cut the hole.
-4. Mount, route the cable, fur back on.
+User controls exposed by Elecrow's wiki:
 
-Bringing it up on the desk first means that if something doesn't work after
-mounting, you know it's the mounting.
+```text
+MENU          GPIO2
+ROTARY DOWN   GPIO4
+ROTARY UP     GPIO6
+ROTARY CONF   GPIO5
+EXIT/BACK     GPIO1
+GPIO_D        GPIO40 / GPIO41
+```
+
+Treat these as board definitions in firmware, not Furby wiring.
+
+## CamS3
+
+The M5Stack Unit CamS3-5MP can be treated as a standalone Wi-Fi peripheral.
+
+For v0.1:
+
+1. Program/configure it on the desk using the supplied Grove2USB-C adapter.
+2. Join the same Wi-Fi/hotspot as the CrowPanel.
+3. Confirm a still image can be viewed/fetched on the network.
+4. Confirm audio recording works.
+5. Only then mount it in Furby.
+
+Suggested physical placement: keep the board inside the head and expose only the camera lens through a small existing gap or a minimally invasive opening.
+
+## Optional UART later
+
+If Wi-Fi coordination becomes annoying, the CamS3 exposes a 4-pin HY2.0/Grove port:
+
+```text
+GND
+5V
+G20
+G19
+```
+
+M5Stack documents G19/G20 as the serial/USB data pins for this unit. A future version could connect CrowPanel UART to the camera for command/control, but this is **not required for v0.1**.
+
+## Furby controls later
+
+The first Furby-native input worth wiring is the **tongue switch** because it has a genuinely useful role: physical approval/cancel.
+
+Do this only after the e-paper + camera + network loop works.
+
+Target interaction:
+
+```text
+DELETE 34 FILES?
+
+PRESS TONGUE
+TO APPROVE
+```
+
+The bridge remains responsible for enforcing the permission policy; a switch press is merely one approval factor, not unrestricted shell access.
