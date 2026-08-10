@@ -1,69 +1,102 @@
-# 02 - Bill of materials
+# 02 — Hardware BOM
 
-Rough UK/GBP, 2026. The entire required build is **four lines**.
+This BOM follows the project rule: **buy the fewest complete modules that get a portable v0.1 working.**
 
-## Required
+## Buy first
 
-| # | Part | Why this one | Approx |
+| # | Part | Job | Buy now? |
 |---|---|---|---|
-| 1 | **Elecrow CrowPanel Advance 4.3"** — ESP32-S3, 800×480 IPS capacitive touch | The whole build in one board: microcontroller, screen, **onboard I2S microphone**, **onboard speaker + amplifier**, USB-C, LiPo JST connector, Crowtail I2C/UART ports, 16 MB flash / 8 MB PSRAM, onboard RF antenna. This single choice is what removes the soldering. | £45-55 |
-| 2 | **USB-C power bank**, 5 V, 2 A+, 5000-10000 mAh | Power, with no charging circuit to build. Any phone power bank works. Slim ones fit the Furby's cavity better. | £10-15 |
-| 3 | **USB-C cable, short right-angle** | Panel to power bank inside the shell. Right-angle so it doesn't bulge. | £5 |
-| 4 | **3M VHB double-sided tape** (or Command strips) | Mounts the panel. Genuinely strong enough; this is what phone screens are held on with. | £6 |
+| 1 | **Elecrow CrowPanel ESP32 2.13" e-paper HMI — DIE01021S** | Main Furby controller + stomach display | Yes |
+| 2 | **M5Stack Unit CamS3-5MP — U174-B** | 5MP camera + built-in microphone + microSD + second ESP32-S3 | Yes |
+| 3 | **5,000–10,000mAh USB power bank** | Portable power without designing a battery circuit | Yes |
+| 4 | **Short USB cables** | Programming + internal power | Yes |
+| 5 | **3M VHB / removable mounting tape** | Fast mounting | Yes |
+| 6 | **Thin ABS/acrylic/foam sheet** | Backing plate behind the existing stomach opening | Yes |
+| 7 | **16–32GB microSD card** | Optional camera capture/offline storage | Useful |
 
-**Required total: roughly £70.**
+## Main controller: Elecrow 2.13-inch e-paper CrowPanel
 
-## Optional — the camera ("eyes")
+Verified from Elecrow's current documentation:
 
-You asked about a mini wireless Bluetooth camera. Straight answer: **Bluetooth
-cameras are not really a thing.** BLE bandwidth cannot carry usable video, so
-anything sold as a "mini wireless camera" is wifi. Which is fine — wifi is what
-we want anyway.
+- ESP32-S3, up to 240 MHz
+- 8 MB flash
+- 8 MB PSRAM
+- Wi-Fi
+- 122 × 250 black/white e-paper
+- partial refresh
+- no backlight required
+- UART0
+- GPIO expansion
+- SH1.0 2-pin 3.7 V battery connector
+- onboard charging circuit
+- menu/back/rotary/reset/boot controls
 
-| Part | Why | Approx |
-|---|---|---|
-| **Seeed XIAO ESP32S3 Sense** | Best option by a distance. Camera **and** microphone on a thumbnail-sized board, USB-C powered, wifi, no soldering, and it ships with the camera ribbon attached. Streams JPEG frames to the PC where a vision model looks at them. Mount it in the beak or an eye socket. | £22 |
-| ESP32-CAM (AI-Thinker) | Half the price, but needs a separate USB programmer and is fiddly to flash. Not lazy. | £8 + £5 |
-| Any wifi "spy cam" with RTSP | Zero build effort, but you're putting an unknown Chinese cloud camera in your living room. Read `docs/07`. | £15 |
+This board becomes the **body/status controller**. It is not an all-in-one audio/video board.
 
-Take the XIAO. It talks to the same brain over the same wifi, so the repo
-supports it as a second WebSocket client rather than as a hardware change.
+## Camera + microphone: M5Stack Unit CamS3-5MP
 
-## Optional — nice to have
+Verified from M5Stack's current documentation:
 
-| Part | For | Approx |
-|---|---|---|
-| 1S LiPo 2000-3000 mAh with JST-PH plug | Replaces the power bank; plugs straight into the panel's BAT connector. Tidier, but it's a lithium cell in a fur toy — read the safety doc. | £12 |
-| PETG/PLA filament | Printed bezel to hide the cut edge and take up the belly curvature. | £- |
-| Craft foam sheet, 2-3 mm | The no-printer version of the bezel. Cut a rectangle, cut the middle out. | £3 |
-| Command strips | Removable mounting if you want to undo it later. | £5 |
+- ESP32-S3-WROOM-1-N16R8
+- 16 MB flash
+- 8 MB PSRAM
+- 5 MP PY260 camera
+- up to 2592 × 1944 stills
+- 88° diagonal field of view
+- built-in PDM microphone
+- microSD slot
+- Wi-Fi image transmission
+- 40 × 24 × 11 mm
+- supplied Grove2USB-C programming adapter and cable
 
-## Tools
+This board becomes the **eyes + ears module**.
 
-| Tool | Note |
+## Do NOT buy yet
+
+| Part | Why not yet |
 |---|---|
-| Craft knife / scalpel | The main tool. Sharp blade, many light passes. |
-| Small drill or hole punch | Drill the four corners first, then cut between them. Stops the plastic cracking. |
-| Metal ruler, fine marker | Marking the rectangle. |
-| Needle file or sandpaper | Cleaning up the cut edge. |
-| Masking tape | Tape over the belly before marking — protects the plastic and takes pencil. |
+| External Wi-Fi antenna hardware | Test real Wi-Fi range first. RF surgery is not a lazy v0.1 task. |
+| Separate ESP32 dev board | The CrowPanel and CamS3 already contain ESP32-S3s. |
+| Raspberry Pi | Adds cost, power and software without helping the first milestone. |
+| LTE/4G modem | Use phone hotspot. |
+| GPS module | Use phone GPS/context later. |
+| Dual MEMS microphone array | Validate the CamS3 microphone first. |
+| Custom PCB | Premature until the final peripheral set is known. |
+| LiPo pack + custom BMS | Use a USB power bank first. |
+| Motor driver | Movement is deliberately postponed. |
+| Replacement Furby eye displays | Cosmetic stretch goal. |
 
-**No soldering iron. No multimeter needed** (except to confirm the batteries are
-out). No bench supply, no logic analyser.
+## Speaker / voice output
 
-## What runs the brain
+The 2.13-inch CrowPanel does **not** replace a speaker system. For the first prototype, TTS can play through the PC or phone while the rest of the physical loop is validated.
 
-No purchase needed if you have a decent PC.
+After v0.1, choose one of these:
 
-- **Local, GPU:** an NVIDIA card with 6 GB+ VRAM runs faster-whisper `small.en`
-  plus a 7-8B model comfortably.
-- **Local, weak GPU (e.g. GTX 1660 Ti, 6 GB):** stick to a 4B-class model and
-  modest context, or it spills to CPU and latency collapses.
-- **Cloud:** Claude or OpenAI for the LLM, ElevenLabs for TTS. Pennies per
-  conversation, no GPU, but the Furby dies when your internet does.
+1. **Lazy option:** tiny self-contained Bluetooth speaker hidden inside Furby, driven by the phone/PC audio route.
+2. **Integrated option:** small I2S amplifier + speaker controlled by the CrowPanel. Better final product, but adds wiring/soldering.
 
-## Ordering discipline
+Do not block the entire project on Furby having an internal speaker on day one.
 
-Order the panel first and **hold it against the belly before cutting anything**.
-If 4.3" doesn't fit, the 3.5" board (480×320) is the same family, same firmware,
-same connectors — only the hole gets smaller.
+## Mounting materials
+
+The stomach opening is already approximately four inches across, so the display should be mounted to a backing plate rather than relying on the fur/plastic edge itself.
+
+Recommended v0.1 stack:
+
+```text
+fur / shell edge
+      ↓
+thin backing plate
+      ↓
+VHB / removable tape
+      ↓
+CrowPanel
+```
+
+Do not 3D-print a bezel until the real board has been held against the Furby and the final screen position is confirmed.
+
+## Power rule
+
+Use a normal USB power bank first. It gives you charging, protection and portability with effectively zero battery engineering.
+
+Once the completed electronics are measured for real current draw and internal fit, a dedicated 3.7 V cell can be considered.

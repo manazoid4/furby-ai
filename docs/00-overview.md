@@ -1,87 +1,132 @@
-# 00 - Overview
+# 00 — Overview
 
-## The one-line pitch
+## One-line pitch
 
-A Furby with a 4-inch touchscreen face in its belly that listens, thinks and
-talks back — built in an afternoon, with a craft knife and some tape.
+Turn a Furby Boom A6847 into a **portable physical AI terminal** that can see, hear, show status, talk to local/cloud agents and eventually approve PC actions with Furby's own physical controls.
 
-## Design principles
+## Non-negotiable design rule: lazy first
 
-1. **Lazy on purpose.** Every decision goes to the option with the fewest
-   steps. One board instead of six. Adhesive instead of screws. USB-C instead
-   of a battery circuit. If a feature needs a soldering iron, it does not go in
-   v1.
-2. **One board does everything.** The CrowPanel Advance 4.3" is an ESP32-S3
-   *plus* an 800×480 touchscreen *plus* a microphone *plus* a speaker and amp.
-   That single choice deletes the microphone wiring, the amplifier, the e-ink
-   module, the level shifting and the whole breadboard stage.
-3. **Local-first.** Default path is offline: faster-whisper, Ollama, Piper.
-   Cloud is a config flag, not a dependency.
-4. **The toy is dumb.** The panel captures audio, plays audio and draws a face.
-   All reasoning is on the PC, so you can swap models without reflashing.
-5. **Every dangerous thing is opt-in.** Command execution is allow-listed and
-   off by default. See `07-safety-and-security.md`.
+This project should be finishable, not impressive-on-paper.
 
-## What we deliberately are NOT doing (in v1)
+1. **Buy modules that already solve hard problems.**
+2. **Wi-Fi before wiring.** If two boards can communicate through the PC/phone, do that before soldering them together.
+3. **Tape before CAD.** VHB/removable tape + a flat backing plate is v0.1 mounting.
+4. **USB power before battery engineering.** A power bank is the first portable power system.
+5. **PC/phone/cloud does the thinking.** ESP32-S3 boards handle peripherals and control, not the main LLM.
+6. **One new capability at a time.** Every milestone must leave a working Furby.
+7. **No irreversible work unless required.** The stomach opening already exists; avoid further shell surgery until the electronics work on the desk.
 
-| Dropped | Why | Could return as |
-|---|---|---|
-| Driving the original motor | Needs a motor driver, wiring, cam decoding, and a power rail that doesn't brown out. Days of work for a twitch. | v2, "making it move again" |
-| Reusing the stock speaker | The panel has its own speaker. Reusing the Furby's means cutting and joining wires. | never, honestly |
-| Separate mics + amp | The panel has an onboard I2S mic and a speaker amp. | never |
-| Replacing the LCD eyes | Shell surgery on the face. The belly screen *is* the face now. | v3 stretch |
-| Battery management circuit | A USB-C power bank is a battery management circuit someone else already built and certified. | optional LiPo later |
+## Current physical state
 
-Dropping motion is the big one and it is the right call. A Furby that talks,
-listens and has an expressive animated face reads as *alive* on camera. A Furby
-that also twitches slightly is not meaningfully more alive, and costs ten times
-the effort.
+- Furby: Boom A6847, Purple Waves.
+- A neat ~4-inch rectangular stomach opening has already been cut.
+- The planned stomach module is the **Elecrow CrowPanel ESP32 2.13-inch e-paper HMI**.
+- Camera/audio capture is delegated to a separate **M5Stack Unit CamS3-5MP**.
 
-## The build, end to end
+## Why the architecture changed
 
-1. Take the fur off. Take the batteries out.
-2. Cut a rectangular hole in the belly, roughly 4 inches across.
-3. Stick the panel in the hole with VHB tape.
-4. Run a USB-C cable out the back to a power bank.
-5. Flash the firmware with your wifi details.
-6. Run `furby-brain` on your PC.
-7. Talk to the Furby.
+The original repo scaffold assumed a 4.3-inch colour CrowPanel with onboard mic/speaker and treated that single panel as the whole machine. That is no longer the build.
 
-There is no step involving solder, and no step where getting it wrong destroys
-a component. The only irreversible step is step 2 — measure twice.
+The 2.13-inch CrowPanel is better suited to the actual project because it gives us:
+
+- ESP32-S3 controller
+- e-paper that remains visible outdoors without a backlight
+- low-power partial refresh
+- 8 MB flash + 8 MB PSRAM
+- Wi-Fi
+- UART/GPIO expansion
+- onboard controls
+- 3.7 V battery connector/charging support
+
+It does **not** solve camera/microphone/speaker by itself, so v0.1 separates those jobs instead of pretending it is an all-in-one board.
+
+## Module responsibilities
+
+### CrowPanel = body controller
+
+Owns:
+
+- stomach e-paper
+- network status
+- agent/activity state
+- simple local menus
+- future tongue/tail/touch inputs
+- future motor commands
+- future battery/status reporting
+
+### CamS3 = eyes + ears
+
+Owns:
+
+- still images / camera stream
+- microphone/audio recording
+- microSD capture
+- its own Wi-Fi connection
+
+### PC / cloud = brain
+
+Owns:
+
+- speech-to-text
+- LLM/agent routing
+- local models
+- vision model calls
+- tool execution
+- memory/context
+- text-to-speech generation
+
+### Phone = outdoor gateway
+
+Owns:
+
+- hotspot
+- mobile data
+- optional GPS/context
+- optional TTS output during early prototypes
+
+## v0.1 — what success means
+
+Do not wait for a fully animated Furby.
+
+A successful v0.1 does this:
+
+1. CrowPanel boots and joins Wi-Fi.
+2. PC sends a status message.
+3. E-paper changes between `OFFLINE`, `ONLINE`, `LISTENING`, `THINKING`, `DONE`, `ERROR`.
+4. CamS3 captures a still image that reaches the PC.
+5. CamS3 captures microphone audio.
+6. Both modules work through a phone hotspot outdoors.
+7. The PC/cloud agent can return a useful response.
+
+## v0.1 intentionally does NOT require
+
+| Feature | Why postponed |
+|---|---|
+| Original Furby movement | Reverse-engineering motor/cam/encoder adds risk before the AI loop exists. |
+| Replacement eyes | Cosmetic scope explosion. |
+| External Wi-Fi antenna | Only add if real-world testing proves the onboard antenna inadequate. |
+| Cellular modem | Phone already provides cellular data. |
+| GPS module | Phone already has GPS. |
+| Custom PCB | Unnecessary until the wiring stabilises. |
+| Custom Li-ion pack | Power bank is faster and safer for prototyping. |
+| Dual mic array | CamS3 built-in mic is enough to validate the concept. |
 
 ## Milestones
 
-- **M0 — Brain works headless.** Python pipeline + simulator. Talk to your
-  laptop, get Furby-voiced replies. *No hardware.*
-- **M1 — Panel on the desk.** Mic → wifi → brain → speaker. Board still in its
-  box, not in the toy.
-- **M2 — The face.** Animated eyes and moods on the 800×480 screen.
-- **M3 — The hole.** Cut, mount, power. The point of no return.
-- **M4 — Tools.** Allow-listed command execution, timers, home automation.
-- **M5 — Eyes (optional).** XIAO ESP32S3 Sense, "what am I holding?"
-- **M6 — Polish.** Persona tuning, latency, boot-to-talk under 3 s.
+- **M0 — Repo truth:** docs match the actual hardware and physical Furby.
+- **M1 — Desk display:** CrowPanel shows PC-sent status over Wi-Fi.
+- **M2 — Camera:** CamS3 still image reaches the PC/vision model.
+- **M3 — Hearing:** CamS3 microphone reaches STT.
+- **M4 — Portable:** same loop works over phone hotspot + power bank.
+- **M5 — Agent:** local/cloud routing and safe PC tools work.
+- **M6 — Voice:** onboard or phone-assisted TTS output.
+- **M7 — Physical approval:** tongue switch confirms sensitive actions.
+- **M8 — Movement:** reuse Furby mechanics only after everything above works.
 
-## Latency budget (target, local path)
+## First command to optimise for
 
-| Stage | Target |
-|---|---|
-| Endpointing (VAD silence) | 400 ms |
-| STT (faster-whisper small.en, GPU) | 300 ms |
-| LLM first token | 400 ms |
-| TTS first chunk (Piper, streamed) | 200 ms |
-| Network + buffering | 200 ms |
-| **End of speech to first sound out** | **~1.5 s** |
+A useful demo is more important than a generic chatbot:
 
-Streaming is what makes this tolerable. Do not wait for the full LLM response
-before starting TTS — sentence-chunk it. See `brain/furbybrain/pipeline.py`.
+> “Furby, check my PC and tell me what needs attention.”
 
-## Known hard problems (be honest in the videos)
-
-| Problem | Mitigation |
-|---|---|
-| Speaker feedback into the mic | Half-duplex by default: stop capturing while speaking. The panel's mic and speaker are centimetres apart, so this matters more here than in a normal build. |
-| The belly is curved, the panel is flat | A 4-inch flat panel on a curved belly leaves gaps at the edges. Plan a printed or foam bezel, or accept the gap and hide it under the fur. |
-| Cutting the hole is irreversible | Paper template first. Drill the corners, then cut between them. |
-| Fur has to sit over or around the screen | Cut the fur opening *smaller* than the plastic hole and let it overlap the bezel — a fur fringe around the screen looks intentional; a gap looks broken. |
-| Screen brightness at 800×480 eats power | A power bank hides this entirely. Dim the backlight when idle. |
+The response should be short, appear on the stomach display, and optionally be spoken. Later, Furby's tongue can act as the physical confirmation control for actions.
