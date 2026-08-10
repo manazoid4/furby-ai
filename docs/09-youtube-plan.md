@@ -1,118 +1,184 @@
-# 09 - YouTube series plan
+# 09 — YouTube plan
 
-## The premise
+## Video premise
 
-"I gave a 2013 Furby a brain." The comedy is the gap between a cursed children's
-toy and a competent AI assistant. Lean into the cursedness - do not try to make
-this look like a polished consumer product. The audience is here for a haunted
-Furby, not for a smart speaker.
+**“I replaced a Furby’s brain with AI and took it outside.”**
 
-## Why this has a shot
+The project should be filmed as a transformation story, not an electronics lecture.
 
-- Furby is a nostalgia trigger for roughly everyone aged 25-45.
-- "Cursed toy + AI" is an existing, proven format with headroom left in it.
-- **Anyone can copy this.** No soldering, four parts, one cut. That is the
-  single biggest lever on shares and saves — "I could actually do this" beats
-  "that's impressive" every time. Lead with it.
-- The glowing 800x480 face in the belly is a strong visual hook, and it is
-  legible on a thumbnail at phone size.
+## Core hook
 
-## The angle that makes it spread
+Open with the finished payoff before explaining anything:
 
-The build being *lazy* is not an apology, it is the hook. Most maker content
-looks unreachable: bench supplies, oscilloscopes, reflow. This is a craft knife,
-some tape, and one board off Amazon.
+```text
+You: “Furby, check my PC.”
 
-Title and thumbnail should both promise that. "No soldering" in the first ten
-seconds. Show the entire parts pile in one shot - four items - and let the
-audience count them.
+Furby stomach:
+THINKING...
 
-## Format
+then:
+RAM 31 / 40 GB
+CHROME IS HIGHEST
 
-**Long-form series** (10-18 min per episode, one per milestone) is the spine.
-**Shorts** are cut from the same footage, not filmed separately - one long-form
-shoot should yield 4-6 shorts.
+You: “Can you fix it?”
 
-## Episode plan
-
-| # | Title angle | Beats | Hook (first 5 s) |
-|---|---|---|---|
-| 1 | "I gave a Furby an AI brain - with no soldering" | premise, the four-item parts pile, fur off, the single-motor reveal as a teardown aside | the finished Furby answering a question, hard cut to a craft knife going into its stomach |
-| 2 | "Cutting a screen into its stomach" | template, drilling the corners, the cut, first power-on in the shell | the moment the face lights up inside the Furby |
-| 3 | "Teaching it to hear and speak" | mic, STT, TTS, voice design, the first sentence | the first thing it ever says, unedited |
-| 4 | "Giving it a face" | expression rendering, blinking, why a crude face beats a real one | eyes tracking, blinking, reacting - no words |
-| 5 | "It can use my computer now" | tools, the allow-list, and *why* the allow-list | Furby sets a timer, then tries something it isn't allowed to and gets refused |
-| 6 | "Now it can see" | XIAO camera, "what am I holding?", the on-demand capture rule | Furby correctly identifying something absurd |
-| 7 | "Living with it for a week" | payoff, bloopers, what broke | the funniest failure of the week, cold open |
-
-## The one rule for the hook
-
-**Show the finished thing in the first five seconds of every episode.** Never
-open with "hey guys, so in this video". The Furby talking is the hook; nothing
-you say is.
-
-## Shorts (cut from the long-form footage)
-
-- The first word it ever says
-- The four parts, counted out on the table - "that's the whole build"
-- The knife going in. Cutting into a Furby is inherently uncomfortable to watch
-- Asking it to delete a file, and watching the allow-list refuse
-- The face blinking, macro shot
-- The moment the fur goes back on
-- Whisper test: how quietly can you talk before it stops hearing you
-- "What's inside a Furby?" - pure teardown, no AI, wide appeal
-
-## Thumbnails
-
-- Furby face, dead centre, filling the frame. Eyes matter more than anything.
-- Belly screen visible and legible, with real text on it.
-- 2-4 words of text maximum. "IT'S ALIVE", "FURBY vs AI", "I MADE IT THINK".
-- High contrast. The purple/white "Purple Waves" fur reads well against a dark
-  background - use that, it's a free brand.
-- Consistent treatment across all 8 episodes so the series reads as a series.
-
-## Title patterns that fit this
-
-- "I gave a Furby an AI brain"
-- "I rebuilt a 2013 Furby so it can actually think"
-- "Putting an LLM inside a Furby was a mistake"
-- "This Furby can use my computer"
-
-Avoid clickbait you don't pay off. The build is genuinely interesting; a title
-that oversells it costs more in retention than it gains in clicks.
-
-## Filming discipline (the part people skip)
-
-- **Film everything, from day one.** Storage is cheap; a re-shoot of a first-time
-  reaction is impossible.
-- **Two cameras minimum:** a wide shot of the bench and a macro on the work. The
-  macro is where the interest is.
-- **Record clean audio separately.** Phone camera audio will not carry an
-  18-minute video.
-- **Capture failures deliberately.** The brownout that reboots it mid-sentence is
-  better content than the success. Do not tidy the failures out of the edit.
-- **Save the "before" shots.** The intact toy, the original PCB, the fur coming
-  off. You get one chance at each.
-
-## Description template
-
-```
-Turning a 2013 Furby Boom into a local-first AI companion.
-Everything is open source: https://github.com/<user>/furby-ai
-
-Parts list: docs/02-hardware-bom.md
-Wiring:     docs/03-wiring.md
-Why it can't run arbitrary commands: docs/07-safety-and-security.md
-
-00:00 ...
+Furby:
+PRESS TONGUE
+TO APPROVE
 ```
 
-Link the repo in the pinned comment as well as the description. The repo is the
-credibility - the maker audience will check it, and a real repo converts them.
+Then cut to:
 
-## Cadence
+> “This started as a 2013 Furby Boom. I cut a screen into its stomach and gave it access to local and cloud AI agents.”
 
-Do not promise a schedule you can't keep. Bank episodes 1-3 fully edited before
-publishing episode 1, then release fortnightly. A stalled series after episode 2
-is the default outcome for projects like this; banking is the only reliable
-defence.
+## Story structure
+
+### 1. Cold open — 0:00–0:20
+
+Show 3 fast capabilities:
+
+- sees something through camera
+- sends/receives an agent task
+- works outside over phone hotspot
+
+Do not explain the wiring yet.
+
+### 2. The object — 0:20–1:00
+
+Show the original Purple Waves Furby and the existing stomach opening.
+
+Explain one rule:
+
+> “I wanted to do this with as little electronics work as possible.”
+
+### 3. The lazy architecture — 1:00–2:00
+
+Explain visually:
+
+```text
+E-paper ESP32 = body
+Camera ESP32 = eyes/ears
+PC/cloud = brain
+Phone = outdoor internet
+```
+
+The dual-ESP32 point is a good narrative beat because it sounds overcomplicated until the viewer sees that it actually removes wiring.
+
+### 4. First life — 2:00–3:30
+
+The first meaningful success is not speech. It is:
+
+```text
+PC → Wi-Fi → Furby stomach
+```
+
+Capture the first time the display changes remotely.
+
+### 5. Give it sight/hearing — 3:30–5:00
+
+Add the CamS3. Show a raw frame first, then vision-model output.
+
+Good demo:
+
+> “What am I holding?”
+
+Avoid fake staged AI answers. If it gets something wrong, use that in the edit.
+
+### 6. Give it agency — 5:00–7:00
+
+Connect the bridge to useful tools/agents.
+
+Good tasks:
+
+- PC status
+- launch an app
+- summarise a local task queue
+- hand work to a local agent
+- ask a cloud model when away from home
+
+The physical-confirmation tongue switch becomes the strongest later payoff because it turns the toy into a real control surface.
+
+### 7. Take it outside — 7:00–8:30
+
+Phone hotspot + power bank.
+
+Show:
+
+- e-paper readable outdoors
+- camera seeing the environment
+- agent query over mobile data
+- Furby still useful away from home
+
+### 8. End with the next upgrade
+
+Do not finish the video with “and that’s it.”
+
+Finish on one unresolved capability:
+
+> “It can see, hear and control my agents now. Next I want to wire its original tongue and movement back into the new brain.”
+
+That naturally creates part two.
+
+## Title ideas
+
+Best default:
+
+**I Replaced a Furby’s Brain With AI**
+
+Alternatives:
+
+- **I Gave a Furby Control of My Computer**
+- **I Turned a 2013 Furby Into an AI Agent**
+- **This Furby Can Control My AI Agents**
+- **I Put Two ESP32s Inside a Furby**
+
+Avoid putting obscure board names in the title.
+
+## Thumbnail concepts
+
+### A — strongest
+
+- Furby filling most of frame
+- obvious stomach e-paper
+- small arrow/text: `AI BRAIN`
+- laptop visibly reacting in background
+
+### B — outdoor
+
+- Furby held outside
+- e-paper showing `ONLINE`
+- phone hotspot symbol
+- short text: `IT'S ALIVE`
+
+### C — control angle
+
+- Furby + laptop
+- terminal/agent activity on laptop
+- stomach reads `RUNNING...`
+- text: `IT CONTROLS MY PC`
+
+Keep thumbnail text to 2–4 words.
+
+## Shorts/TikTok clips to capture while building
+
+1. cutting/revealing the stomach opening
+2. first e-paper boot
+3. first remote status update
+4. first camera frame from Furby
+5. “what am I holding?” vision demo
+6. Furby outside on mobile hotspot
+7. physical tongue approval when implemented
+8. original movement coming back to life later
+
+## Build-log filming checklist
+
+For every milestone capture:
+
+- before
+- one close-up during
+- serial/software proof
+- first successful run
+- first failure
+- final clean demonstration
+
+The repo build log and video footage should tell the same story.
