@@ -1,0 +1,46 @@
+# Secrets - see docs/07-safety-and-security.md
+# These lines are the important ones in this file.
+firmware/include/secrets.h
+brain/.env
+*.pem
+*.key
+
+# Recorded audio and camera frames. Never commit household audio.
+brain/recordings/
+brain/logs/
+brain/sandbox/
+*.wav
+*.jpg
+*.jpeg
+
+# PlatformIO
+firmware/.pio/
+firmware/.vscode/
+*.bin
+*.elf
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+
+# Models - large, and re-downloadable
+*.onnx
+*.gguf
+models/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.idea/
+.vscode/
+*.swp
