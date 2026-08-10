@@ -1,79 +1,118 @@
-# 08 - Build log
+# 08 — Build log
 
-Append-only. Newest at the top. One entry per session, however small.
+This file should stay brutally factual. Record what physically happened, what was tested, and what is still only planned.
 
-This file is the raw material for the videos. Write it *while* you build, not
-after — "the bit where it went wrong" is the content, and you will not remember
-it accurately in a week.
+## 2026-08-10 — project direction corrected
 
-Template:
+### Furby
 
+- Model: **Furby Boom A6847**
+- Colour: **Purple Waves**
+- Stomach: a neat rectangular opening approximately **4 inches across has already been cut**.
+
+### Architecture decision
+
+The original scaffold assumed a 4.3-inch colour CrowPanel Advance with onboard microphone/speaker and treated it as the complete electronics package.
+
+That plan has been abandoned.
+
+The current v0.1 plan is:
+
+```text
+Elecrow 2.13" e-paper CrowPanel ESP32-S3
+    = stomach display + body controller
+
+M5Stack Unit CamS3-5MP
+    = camera + microphone + microSD
+
+USB power bank
+    = portable power
+
+phone hotspot / home Wi-Fi
+    = connectivity
+
+PC / cloud
+    = AI + agents + tools + STT/TTS
 ```
-## YYYY-MM-DD - short title
-**Goal:**
-**Did:**
-**Broke:**
-**Learned:**
-**Next:**
-**Footage:** (clip names / timestamps worth using)
-```
 
----
+### Why
 
-## 2026-08-10 - Scope cut: no soldering
-**Goal:** Simplify the build to something achievable in an afternoon.
-**Did:** Replaced the entire discrete design (separate ESP32-S3 + 2.13" e-ink +
-2× ICS-43434 mics + MAX98357A amp + DRV8833 motor driver + LiPo charging
-circuit) with a single **CrowPanel Advance 4.3"** — ESP32-S3, 800×480 IPS touch,
-onboard mic, onboard speaker and amp, USB-C, LiPo JST. Dropped motor control
-entirely from v1. Rewrote docs 00-09 and stripped the firmware to match.
-**Broke:** Nothing physical. Deleted the motion and e-ink firmware modules.
-**Learned:**
-- The originally linked Amazon part (B0FX4PZZMQ) is the CrowPanel **2.13" e-ink**,
-  122×250, no mic, no speaker — too small for a 4-inch hole and it would have
-  needed exactly the wiring we were trying to avoid. The Advance 4.3" is the
-  same brand, one board, and needs none.
-- "Mini wireless Bluetooth camera" is not a real product class. BLE can't carry
-  usable video; everything sold that way is wifi. The XIAO ESP32S3 Sense
-  (camera + mic, USB-C, no soldering) is the right answer and joins as a second
-  WebSocket client rather than a hardware change.
-- Losing the motor lost less than expected. An animated 800×480 face is more
-  expressive than a single-motor cam ever was.
-**Next:** Order the panel. Measure the belly. Do not cut until the panel is in
-hand and held against it.
-**Footage:** none.
+- matches the hardware actually being considered/purchased
+- far less fabrication
+- e-paper works well outdoors
+- two specialised ESP32 modules avoid camera/display contention
+- no custom PCB required
+- no need to reverse-engineer Furby mechanics before the AI loop works
 
----
+## Current verified hardware facts
 
-## 2026-08-10 - Repo scaffolded
-**Goal:** Structure the project before buying parts.
-**Did:** Wrote docs 00-09 and the firmware skeleton for the discrete design.
-**Learned:** There is no common 2.00" e-paper panel; 2.13" is the standard part.
-Moot now — see above.
-**Footage:** none.
+### Elecrow CrowPanel 2.13-inch
 
----
+Verified from Elecrow documentation/hardware repo:
 
-## Measurement table
+- ESP32-S3
+- 8 MB flash
+- 8 MB PSRAM
+- 122 × 250 monochrome e-paper
+- Wi-Fi
+- partial refresh
+- UART/GPIO
+- 3.7 V BAT connector with charging circuit
+- EPD pins: SCK 12, MOSI 11, RES 10, DC 13, CS 14, BUSY 9
 
-Fill this in **before cutting**. Dates as `YYYY-MM-DD`.
+### M5Stack Unit CamS3-5MP
 
-| Date | Measurement | Value | Notes |
-|---|---|---|---|
-| | Belly flat area (W × H mm) | | does 4.3" fit, or drop to 3.5"? |
-| | Belly curvature drop over 100 mm | | decides wedge/bezel |
-| | Clearance behind belly wall (mm) | | panel + connector depth |
-| | Panel visible glass area (W × H mm) | | measured off the real board |
-| | Panel outer PCB size (W × H mm) | | the hole must be smaller than this |
-| | Idle current, screen dimmed | | power bank auto-shutoff risk |
-| | Active current, screen bright | | runtime estimate |
+Verified from M5Stack documentation:
 
-## Open questions
+- ESP32-S3-WROOM-1-N16R8
+- 16 MB flash
+- 8 MB PSRAM
+- 5 MP camera
+- built-in PDM mic
+- microSD
+- Wi-Fi
+- 40 × 24 × 11 mm
+- supplied Grove2USB-C programmer
 
-- [ ] Does 4.3" fit the belly, or is 3.5" the realistic size?
-- [ ] Is the original PCB directly behind the belly wall?
-- [ ] Which GPIOs does *this* CrowPanel model use for the mic and speaker?
-      (`firmware/include/config.h` has placeholders — get the real ones from the
-      Elecrow wiki for the exact board)
-- [ ] Does the power bank stay awake with the screen dimmed?
-- [ ] Can the fur be cut and hemmed around the screen without fraying?
+## Next physical actions
+
+Do these in order and record results here:
+
+- [ ] receive CrowPanel
+- [ ] power it on untouched on the desk
+- [ ] run Elecrow factory/example firmware
+- [ ] display `FURB-1 / ONLINE`
+- [ ] connect CrowPanel to home Wi-Fi
+- [ ] make PC change the displayed state
+- [ ] temporary-fit CrowPanel behind stomach opening
+- [ ] receive/configure CamS3
+- [ ] view CamS3 image over Wi-Fi
+- [ ] test CamS3 microphone
+- [ ] mount camera temporarily
+- [ ] run both from phone hotspot
+- [ ] run both from portable power
+
+## Do not claim yet
+
+Until physically tested, do not say:
+
+- final battery runtime
+- microphone pickup distance
+- Wi-Fi range inside the Furby shell
+- final camera placement
+- final CrowPanel mounting method
+- original Furby motor compatibility
+- onboard speaker solution
+
+## Video rule
+
+Film failures and ugly prototypes. Do not reconstruct them later.
+
+Every time hardware changes:
+
+1. 5-second wide shot
+2. close-up of what changed
+3. screen recording/serial output if relevant
+4. immediate result
+
+That creates the YouTube edit automatically while the project is being built.
