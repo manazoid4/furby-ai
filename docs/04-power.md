@@ -1,78 +1,77 @@
-# 04 - Power
+# 04 — Power
 
-The old version of this file was a thousand words about brownouts, bulk
-capacitors and star grounding. All of that existed to stop a motor from
-crashing the microcontroller. There is no motor now, so the entire problem is
-gone.
+## v0.1: use a USB power bank
 
-**Power plan: plug a USB-C cable into a power bank.**
+Do not start this project by designing a battery system.
 
-That's it. The rest of this page is optional detail.
+For the portable prototype, use a normal **5,000–10,000mAh USB power bank** and short cables.
 
-## Option A — USB-C power bank (recommended)
+Why:
 
-| | |
-|---|---|
-| Cost | £10-15 |
-| Build effort | zero |
-| Runtime | roughly 6-15 h on a 10000 mAh bank, depending on screen brightness |
-| Recharge | unplug the bank, or plug a charger into it in place |
-| Safety | the bank's own protection and certification does the work |
+- charging is already solved
+- cell protection is already solved
+- portable immediately
+- easy to replace
+- lets us measure real runtime before designing anything custom
 
-A power bank is a battery, a charger, a protection circuit and a regulator that
-someone else already built and certified. Using one is not a compromise; it is
-the correct engineering answer for a one-off toy.
+## Basic layout
 
-**Watch out for auto-shutoff.** Many power banks switch off when current drops
-below ~50-100 mA, which an idle ESP32 with a dimmed screen can absolutely do.
-If your Furby dies after a few quiet minutes, that's why. Fixes: pick a bank
-with an always-on / low-current mode (often sold for trickle-charging), or keep
-the screen backlight high enough to stay above the threshold.
+```text
+USB power bank
+   ├── CrowPanel
+   └── CamS3 / camera power path
+```
 
-## Option B — 1S LiPo into the panel's BAT connector
+If the chosen power bank only has one usable output, use a small powered split/hub only after verifying it behaves correctly. Two independent outputs is simpler.
 
-The CrowPanel Advance has a JST PH2.0 battery connector and onboard charging,
-so a LiPo is genuinely plug-in too — no soldering, as long as you buy a cell
-with the matching PH2.0 plug and correct polarity.
+## CrowPanel battery option — later
 
-**Check the polarity before plugging it in.** JST PH2.0 is not standardised
-across vendors; a reversed cell can destroy the board instantly. Compare the
-cell's wire colours against the board's silkscreen, and if they disagree, do
-not "just try it".
+Elecrow documents a **3.7 V SH1.0 2-pin BAT connector with an onboard charging circuit** on the 2.13-inch CrowPanel.
 
-| | |
-|---|---|
-| Cost | £12 |
-| Build effort | plug it in (after checking polarity) |
-| Tidiness | much better — everything inside, charge over the panel's USB-C |
-| Risk | it is a lithium pouch cell inside a fur-covered toy |
+That makes a dedicated internal Li-ion/LiPo pack possible later, but it is not automatically the best first choice. We still need to know:
 
-## Safety (this part is not optional)
+- finished-system current draw
+- camera power arrangement
+- desired runtime
+- safe mounting location
+- charging access
+- whether original Furby movement is added
 
-- Never charge a LiPo sealed inside a fur toy unattended, and never overnight.
-  Say this out loud in the video — people will copy this build.
-- Buy cells **with a protection PCB**. Check for the small board at the wire end.
-- No sharp edges, screws or cut plastic near the cell. Puncture is what starts
-  fires.
-- A puffed cell is a dead cell. Take it to a battery recycling point.
-- A power bank sidesteps all of the above, which is the main argument for it.
+## Camera power
 
-## Power consumption, roughly
+The CamS3 should initially be powered exactly as its normal development setup expects. Avoid modifying power rails until camera + microphone + Wi-Fi are confirmed stable on the desk.
 
-| State | Estimate |
-|---|---|
-| Screen on, full brightness, wifi active, streaming audio | 300-500 mA |
-| Screen dimmed, idle, connected | 120-200 mA |
-| Screen off, idle | 60-100 mA |
+## Outdoor priority
 
-Measure yours and put the numbers in `08-build-log.md`. Dimming the backlight
-when nobody has spoken for a few minutes is the single biggest saving, and it
-doubles as a "the Furby went to sleep" behaviour, which is charming.
+The actual portable chain is:
 
-## Switching it off
+```text
+power bank → Furby electronics
+phone battery → hotspot / mobile data
+```
 
-The panel has a reset button but no power switch. Options:
+Keep those independent in v0.1. Furby should not charge the phone and the phone should not be required to power Furby.
 
-- Unplug the USB-C. Laziest, and fine.
-- Use a power bank with a physical button.
-- Put an inline USB switch (£4, plug-in) on the cable.
+## Power-saving strategy
+
+E-paper is ideal for the portable build because it needs no backlight and can retain the displayed image without continuous screen power. The firmware should therefore avoid pointless refreshes.
+
+Suggested UI policy:
+
+- refresh immediately on major state changes
+- use partial refresh where supported
+- do not animate continuously
+- update battery/network indicators periodically, not every second
+- let the display remain on the last useful status while idle
+
+## Before switching to an internal cell
+
+Record:
+
+1. CrowPanel current at idle
+2. CrowPanel current during refresh/Wi-Fi activity
+3. CamS3 current idle
+4. CamS3 current during capture/transmission
+5. total runtime from the chosen power bank
+
+Only then choose a dedicated cell.
